@@ -2,3 +2,5 @@
 # Run: pip-compile --allow-unsafe --generate-hashes requirements-build.in
 #      to regenerate requirements-build.txt.
 build
+setuptools>=68.0
+wheel

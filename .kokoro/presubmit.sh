@@ -18,8 +18,11 @@
 
 set -eo pipefail
 
+# Resolve SCRIPT_DIR before cd so the relative BASH_SOURCE path is
+# resolved against the original working directory (the Kokoro workspace root).
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 cd "${KOKORO_ARTIFACTS_DIR}/git/antigravity-sdk-py"
-SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 
 # --- Python 3.13 via pyenv (pre-installed on the Kokoro image) ---
 echo "--- Setting up Python 3.13 ---"
@@ -46,7 +49,10 @@ echo "--- Running tests ---"
 python3 -m pytest -v --tb=short
 
 echo "--- Building wheel ---"
-python3 -m build --wheel --outdir dist/
+# --no-isolation: use the setuptools/wheel already installed via
+# requirements-build.txt rather than creating a fresh venv that
+# downloads from PyPI (which can time out and bypasses hash verification).
+python3 -m build --wheel --no-isolation --outdir dist/
 
 echo "--- Verifying wheel installs and imports correctly ---"
 python3 -m pip install --force-reinstall --no-deps dist/*.whl

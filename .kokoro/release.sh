@@ -139,7 +139,10 @@ for PLATFORM in "${!PLATFORM_TAGS[@]}"; do
   touch "${BIN_DEST}/__init__.py"
 
   # Build the wheel, then re-tag with the correct platform.
-  python3 -m build --wheel --outdir "${DIST_DIR}"
+  # --no-isolation: use the setuptools/wheel already installed via
+  # requirements-release.txt rather than creating a fresh venv that
+  # downloads from PyPI (which can time out and bypasses hash verification).
+  python3 -m build --wheel --no-isolation --outdir "${DIST_DIR}"
   python3 -m wheel tags \
     --platform-tag="${WHEEL_PLAT}" \
     --remove \
