@@ -317,7 +317,7 @@ class ProcessToolCallsTest(absltest.TestCase):
     )
     self.assertLen(results, 1)
     self.assertEqual(results[0].name, "_bad_tool")
-    self.assertIn("kaboom", results[0].error)
+    self.assertEqual(results[0].error, "kaboom")
 
   def test_missing_args_defaults_to_empty(self):
     """Verifies that tool calls without 'args' key default to empty dict.

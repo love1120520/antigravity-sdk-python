@@ -303,7 +303,7 @@ class ToolRunner:
         results.append(
             types.ToolResult(
                 name=tc.name,
-                error=f"Error executing tool '{tc.name}': {e}",
+                error=str(e),
                 exception=e,
             )
         )

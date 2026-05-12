@@ -912,7 +912,8 @@ class LocalConnection(connection.Connection):
         result = types.ToolResult(
             id=tool_call.id,
             name=tool_call.name,
-            error=f"Tool execution failed: {e}",
+            error=str(e),
+            exception=e,
         )
 
       # Dispatch on-tool-error hook when the result carries an error.
