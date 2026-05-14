@@ -650,10 +650,14 @@ class BuiltinToolsTest(unittest.TestCase):
         "nondestructive and destructive_tools must not overlap.",
     )
 
-  def test_all_returns_every_member(self):
-    """Verifies that all() returns every enum member."""
-    self.assertEqual(set(types.BuiltinTools.all()), set(types.BuiltinTools))
-    self.assertEqual(len(types.BuiltinTools.all()), len(types.BuiltinTools))
+  def test_all_tools_returns_every_member(self):
+    """Verifies that all_tools() returns every enum member."""
+    self.assertEqual(
+        set(types.BuiltinTools.all_tools()), set(types.BuiltinTools)
+    )
+    self.assertEqual(
+        len(types.BuiltinTools.all_tools()), len(types.BuiltinTools)
+    )
 
   def test_none_returns_empty_list(self):
     """Verifies that none() returns an empty list."""

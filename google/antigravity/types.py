@@ -22,10 +22,9 @@ from __future__ import annotations
 
 import asyncio
 import enum
-import itertools
 import mimetypes
 import pathlib
-from typing import Annotated, Any, AsyncIterator, Callable, List, Literal, Optional, Union
+from typing import Annotated, Any, AsyncIterator, Callable, Literal
 
 import pydantic
 
@@ -198,8 +197,8 @@ class TemplatedSystemInstructions(pydantic.BaseModel):
   for a full example with identity and sections.
   """
 
-  identity: Optional[str] = None
-  sections: List[SystemInstructionSection] = pydantic.Field(
+  identity: str | None = None
+  sections: list[SystemInstructionSection] = pydantic.Field(
       default_factory=list
   )
 
@@ -207,9 +206,7 @@ class TemplatedSystemInstructions(pydantic.BaseModel):
 # Union type representing the two ways to configure system instructions.
 # - CustomSystemInstructions: Full replacement (Advanced usage).
 # - TemplatedSystemInstructions: Append to defaults (Recommended).
-SystemInstructions = Union[
-    CustomSystemInstructions, TemplatedSystemInstructions
-]
+SystemInstructions = CustomSystemInstructions | TemplatedSystemInstructions
 
 
 class BuiltinTools(str, enum.Enum):
@@ -277,7 +274,7 @@ class BuiltinTools(str, enum.Enum):
     ]
 
   @classmethod
-  def all(cls) -> list["BuiltinTools"]:
+  def all_tools(cls) -> list["BuiltinTools"]:
     """Returns all builtin tools.
 
     Returns:
@@ -818,9 +815,8 @@ class ChatResponse:
   async def __aiter__(self) -> AsyncIterator[str]:
     """Streams conversational text token deltas directly as raw strings."""
     async for chunk in self.chunks:
-      chunk_obj: Any = chunk
-      if isinstance(chunk_obj, Text):
-        yield chunk_obj.text
+      if isinstance(chunk, Text):
+        yield chunk.text
 
   @property
   def thoughts(self) -> AsyncIterator[str]:
@@ -828,9 +824,8 @@ class ChatResponse:
 
     async def _thoughts_gen():
       async for chunk in self.chunks:
-        chunk_obj: Any = chunk
-        if isinstance(chunk_obj, Thought):
-          yield chunk_obj.text
+        if isinstance(chunk, Thought):
+          yield chunk.text
 
     return _thoughts_gen()
 
@@ -840,9 +835,8 @@ class ChatResponse:
 
     async def _tool_calls_gen():
       async for chunk in self.chunks:
-        chunk_obj: Any = chunk
-        if isinstance(chunk_obj, ToolCall):
-          yield chunk_obj
+        if isinstance(chunk, ToolCall):
+          yield chunk
 
     return _tool_calls_gen()
 
@@ -1042,6 +1036,19 @@ class Video(_BaseMedia):
 ContentPrimitive = str | Image | Document | Audio | Video
 Content = ContentPrimitive | list[ContentPrimitive]
 
+# Registry mapping each supported MIME type to its media class.
+# Built once at import time from the per-category frozensets.
+_MIME_TO_MEDIA_CLASS: dict[str, type[_BaseMedia]] = {
+    mime: cls
+    for mime_set, cls in [
+        (SUPPORTED_IMAGE_MIMES, Image),
+        (SUPPORTED_DOCUMENT_MIMES, Document),
+        (SUPPORTED_AUDIO_MIMES, Audio),
+        (SUPPORTED_VIDEO_MIMES, Video),
+    ]
+    for mime in mime_set
+}
+
 
 def from_file(
     path: str | pathlib.Path, description: str | None = None
@@ -1068,40 +1075,10 @@ def from_file(
         f"Could not infer a valid MIME type for extension: '{file_path.suffix}'"
     )
 
-  if mime_guess in SUPPORTED_IMAGE_MIMES:
-    return Image(
-        data=data,
-        mime_type=mime_guess,
-        description=description,
-    )
-  elif mime_guess in SUPPORTED_DOCUMENT_MIMES:
-    return Document(
-        data=data,
-        mime_type=mime_guess,
-        description=description,
-    )
-  elif mime_guess in SUPPORTED_AUDIO_MIMES:
-    return Audio(
-        data=data,
-        mime_type=mime_guess,
-        description=description,
-    )
-  elif mime_guess in SUPPORTED_VIDEO_MIMES:
-    return Video(
-        data=data,
-        mime_type=mime_guess,
-        description=description,
-    )
-  else:
-    all_supported = list(
-        itertools.chain(
-            SUPPORTED_IMAGE_MIMES,
-            SUPPORTED_DOCUMENT_MIMES,
-            SUPPORTED_AUDIO_MIMES,
-            SUPPORTED_VIDEO_MIMES,
-        )
-    )
+  media_cls = _MIME_TO_MEDIA_CLASS.get(mime_guess)
+  if media_cls is None:
     raise ValueError(
         f"Unsupported MIME type: '{mime_guess}'. "
-        f"Supported file formats in the SDK are: {sorted(all_supported)}"
+        f"Supported file formats in the SDK are: {sorted(_MIME_TO_MEDIA_CLASS)}"
     )
+  return media_cls(data=data, mime_type=mime_guess, description=description)  # pytype: disable=bad-return-type
