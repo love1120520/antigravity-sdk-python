@@ -193,7 +193,7 @@ class CustomSystemInstructions(pydantic.BaseModel):
 class TemplatedSystemInstructions(pydantic.BaseModel):
   """Use this to override the agent's identity and append sections to the default system instructions.
 
-  See `examples/agents/templated_system_instructions.py`
+  See `examples/getting_started/persona_config.py`
   for a full example with identity and sections.
   """
 
